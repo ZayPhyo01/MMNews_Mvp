@@ -1,5 +1,6 @@
 package com.padcmyanmar.mmnews.kotlin.network
 
+import android.util.Log
 import com.google.gson.Gson
 import com.padcmyanmar.mmnews.kotlin.events.DataEvent
 import com.padcmyanmar.mmnews.kotlin.events.ErrorEvent
@@ -33,6 +34,7 @@ class NewsDataAgent private constructor() {
         val newsResponseCall = mNewsApi.loadMMNews(page, accessToken)
         newsResponseCall.enqueue(object : Callback<GetNewsResponse> {
             override fun onFailure(call: Call<GetNewsResponse>?, t: Throwable?) {
+                Log.d(" Response "," false")
                 EventBus.getDefault().post(ErrorEvent.ApiErrorEvent(t))
             }
 
@@ -41,11 +43,14 @@ class NewsDataAgent private constructor() {
                 if (newsResponse != null
                         && newsResponse.getCode() == 200
                         && newsResponse.getNewsList().isNotEmpty()) {
+                    Log.d(" Response "," success")
                     val newsLoadedEvent = DataEvent.NewsLoadedEvent(newsResponse.getPageNo(), newsResponse.getNewsList())
                     EventBus.getDefault().post(newsLoadedEvent)
                 } else {
-                    if(newsResponse != null)
+                    if(newsResponse != null) {
                         EventBus.getDefault().post(DataEvent.EmptyDataLoadedEvent(newsResponse.getMessage()))
+                        Log.d("news ", "empty")
+                    }
                     else
                         EventBus.getDefault().post(DataEvent.EmptyDataLoadedEvent())
                 }

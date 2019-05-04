@@ -17,16 +17,27 @@ import com.padcmyanmar.mmnews.kotlin.data.vos.NewsVO
 import com.padcmyanmar.mmnews.kotlin.delegates.NewsItemDelegate
 import com.padcmyanmar.mmnews.kotlin.events.DataEvent
 import com.padcmyanmar.mmnews.kotlin.events.ErrorEvent
+import com.padcmyanmar.mmnews.kotlin.mvp.presenter.NewsListPresenter
+import com.padcmyanmar.mmnews.kotlin.mvp.view.NewsList
 import kotlinx.android.synthetic.main.activity_home.*
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import java.util.*
 import kotlin.collections.ArrayList
 
-class HomeActivity : BaseActivity(), NewsItemDelegate {
+class HomeActivity : BaseActivity(), NewsItemDelegate,NewsList {
+    override fun showNewsList(list: MutableList<NewsVO>) {
+        swipeRefreshLayout.isRefreshing = false
+                mNewsAdapter!!.appendNewData(list)
+    }
 
     private lateinit var mNewsAdapter: NewsAdapter
+    private val mNewListPresenter : NewsListPresenter
     private var mSmartScrollListener: SmartScrollListener? = null
+
+    init {
+        mNewListPresenter = NewsListPresenter(this)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,6 +45,7 @@ class HomeActivity : BaseActivity(), NewsItemDelegate {
         setSupportActionBar(toolbar)
         supportActionBar!!.setDisplayShowTitleEnabled(false)
 
+        mNewListPresenter.onCreate()
         fab.setOnClickListener{ view ->
 
             var addResult: Int = addTheseTwo(2410, 1876)
@@ -88,7 +100,7 @@ class HomeActivity : BaseActivity(), NewsItemDelegate {
             override fun onListEndReach() {
                 Snackbar.make(rvNews, "Loading more data.", Snackbar.LENGTH_LONG).show()
                 swipeRefreshLayout.isRefreshing = true
-                NewsAppModel.getInstance().loadNews()
+                mNewListPresenter.loadNewsList()
             }
         })
         rvNews.addOnScrollListener(mSmartScrollListener)
@@ -97,11 +109,11 @@ class HomeActivity : BaseActivity(), NewsItemDelegate {
         rvNews.adapter = mNewsAdapter
 
         swipeRefreshLayout.isRefreshing = true
-        NewsAppModel.getInstance().loadNews()
+        mNewListPresenter.loadNewsList()
 
         swipeRefreshLayout.setOnRefreshListener {
             mNewsAdapter.clearData()
-            NewsAppModel.getInstance().forceLoadNews()
+            mNewListPresenter.loadNewsList()
         }
     }
 
@@ -250,13 +262,9 @@ class HomeActivity : BaseActivity(), NewsItemDelegate {
         startActivity(intent)
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onNewsLoadedEvent(newsLoadedEvent: DataEvent.NewsLoadedEvent) {
-        swipeRefreshLayout.isRefreshing = false
-        mNewsAdapter!!.appendNewData(newsLoadedEvent.loadedNews as MutableList<NewsVO>)
-    }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
+
+ /*   @Subscribe(threadMode = ThreadMode.MAIN)
     fun onErrorNewsLoadedEvent(apiErrorEvent: ErrorEvent.ApiErrorEvent) {
         swipeRefreshLayout.isRefreshing = false
         Snackbar.make(rvNews, "ERROR : " + apiErrorEvent.getMsg(), Snackbar.LENGTH_LONG)
@@ -268,5 +276,5 @@ class HomeActivity : BaseActivity(), NewsItemDelegate {
         swipeRefreshLayout.isRefreshing = false
         Snackbar.make(rvNews, "ERROR : " + emptyDataLoadedEvent.errorMsg, Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show()
-    }
+    }*/
 }
